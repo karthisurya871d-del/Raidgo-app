@@ -1,0 +1,14 @@
+{
+  "name": "ridego",
+  "version": "1.0.0",
+  "description": "RideGo Mini Project",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js"
+  },
+  "author": "Surya",
+  "license": "ISC",
+  "dependencies": {
+    "express": "^4.19.2"
+  }
+}

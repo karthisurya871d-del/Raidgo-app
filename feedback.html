@@ -1,0 +1,93 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>RideGo - Feedback</title>
+
+    <style>*{
+    margin:0;
+    padding:0;
+    box-sizing:border-box;
+    font-family:Arial,sans-serif;
+}
+
+body{
+    background:#FFD400;
+    display:flex;
+    justify-content:center;
+    align-items:center;
+    height:100vh;
+}
+
+.container{
+    width:400px;
+    background:white;
+    padding:30px;
+    border-radius:15px;
+    box-shadow:0 5px 20px rgba(0,0,0,.2);
+    text-align:center;
+}
+
+h2{
+    margin-bottom:20px;
+}
+
+input,
+select,
+textarea{
+    width:100%;
+    padding:12px;
+    margin:10px 0;
+    border:1px solid #ccc;
+    border-radius:8px;
+    font-size:15px;
+}
+
+textarea{
+    height:100px;
+    resize:none;
+}
+
+button{
+    width:100%;
+    padding:12px;
+    background:black;
+    color:#FFD400;
+    border:none;
+    border-radius:8px;
+    font-size:17px;
+    cursor:pointer;
+}
+
+button:hover{
+    background:#333;
+}</style>
+</head>
+<body>
+
+<div class="container">
+
+    <h2>Feedback</h2>
+
+    <input type="text" id="name" placeholder="Enter Your Name">
+
+    <select id="rating">
+        <option value="">Select Rating</option>
+        <option>⭐⭐⭐⭐⭐ Excellent</option>
+        <option>⭐⭐⭐⭐ Good</option>
+        <option>⭐⭐⭐ Average</option>
+        <option>⭐⭐ Poor</option>
+        <option>⭐ Very Poor</option>
+    </select>
+
+    <textarea id="comments" placeholder="Write Your Feedback"></textarea>
+
+    <button onclick="submitFeedback()">Submit Feedback</button>
+
+</div>
+
+<script src="javascript.js"></script>
+
+</body>
+</html>
