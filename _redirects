@@ -1,0 +1,16 @@
+# Netlify Redirects & Security Rules
+
+# Block sensitive data files from being served as static assets
+/data/*         /404.html       404!
+/package.json   /404.html       404!
+/server.js      /404.html       404!
+
+# Clean URL Mappings
+/login          /login.html     200
+/register       /register.html  200
+/bookride       /bookride.html  200
+/paymentpage    /payment.html   200
+/feedbackpage   /feedback.html  200
+/mybookings     /mybookings.html 200
+/ridestatus     /ridestatus.html 200
+/driver         /driver.html    200

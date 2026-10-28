@@ -2,6 +2,57 @@
 // RideGo - Frontend + Backend Connected
 // ========================================
 
+// -------------------- API BASE URL CONFIGURATION --------------------
+// When deployed on Netlify, either set window.API_BASE_URL to your deployed backend
+// (e.g., https://your-backend.onrender.com) or configure a Netlify _redirects proxy.
+const API_BASE_URL = (typeof window !== "undefined" && window.API_BASE_URL)
+    ? window.API_BASE_URL.replace(/\/$/, "")
+    : "";
+
+/**
+ * Robust API helper with comprehensive error handling:
+ * - Checks HTTP status codes (404, 500, etc.)
+ * - Prevents JSON parsing crashes on HTML error pages
+ * - Sanitizes errors to prevent credential leakage
+ */
+async function apiRequest(endpoint, options = {}) {
+    const url = `${API_BASE_URL}${endpoint}`;
+    let response;
+    try {
+        response = await fetch(url, options);
+    } catch (networkError) {
+        console.error("Network connectivity error during API request");
+        throw new Error("Unable to connect to the backend server. Please verify your internet connection or backend server status.");
+    }
+
+    const contentType = response.headers.get("content-type") || "";
+    let data;
+
+    if (contentType.includes("application/json")) {
+        try {
+            data = await response.json();
+        } catch (e) {
+            data = null;
+        }
+    }
+
+    if (!response.ok) {
+        if (response.status === 404) {
+            throw new Error("API endpoint not found (HTTP 404). If using Netlify, your backend server must be deployed and linked.");
+        }
+        if (data && data.message) {
+            throw new Error(data.message);
+        }
+        throw new Error(`Server returned error status: HTTP ${response.status}`);
+    }
+
+    if (!data) {
+        throw new Error("Unexpected non-JSON response from server.");
+    }
+
+    return data;
+}
+
 // -------------------- NAVBAR FUNCTIONS --------------------
 
 function homePage() {
@@ -89,48 +140,66 @@ function selectRide(vehicle) {
 // -------------------- REGISTER --------------------
 
 function registerUser() {
+    let nameElem = document.getElementById("name");
+    let phoneElem = document.getElementById("phone");
+    let emailElem = document.getElementById("email");
+    let passElem = document.getElementById("password");
+    let confirmElem = document.getElementById("confirmPassword");
 
-    let name    = document.getElementById("name").value.trim();
-    let phone   = document.getElementById("phone").value.trim();
-    let email   = document.getElementById("email").value.trim();
-    let password = document.getElementById("password").value;
-    let confirm  = document.getElementById("confirmPassword").value;
-
-    if (name == "" || phone == "" || email == "" || password == "" || confirm == "") {
-        alert("Please fill all fields");
+    if (!nameElem || !phoneElem || !emailElem || !passElem || !confirmElem) {
         return false;
     }
 
-    if (phone.length != 10) {
-        alert("Enter a valid 10-digit mobile number");
+    let name     = nameElem.value.trim();
+    let phone    = phoneElem.value.trim();
+    let email    = emailElem.value.trim();
+    let password = passElem.value;
+    let confirm  = confirmElem.value;
+
+    if (name === "" || phone === "" || email === "" || password === "" || confirm === "") {
+        alert("Please fill in all fields.");
         return false;
     }
 
-    if (password != confirm) {
-        alert("Passwords do not match");
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(email)) {
+        alert("Please enter a valid email address.");
         return false;
     }
 
-    // ✅ Backend API call
-    fetch("/auth/register", {
+    if (!/^\d{10}$/.test(phone)) {
+        alert("Enter a valid 10-digit mobile number.");
+        return false;
+    }
+
+    if (password.length < 6) {
+        alert("Password must be at least 6 characters long.");
+        return false;
+    }
+
+    if (password !== confirm) {
+        alert("Passwords do not match.");
+        return false;
+    }
+
+    // Call Backend API via safe apiRequest
+    apiRequest("/auth/register", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ name, phone, email, password })
     })
-    .then(res => res.json())
     .then(data => {
-
         if (data.success) {
             alert("Registration Successful! Please Login.");
             window.location.href = "/login";
         } else {
-            alert(data.message);
+            alert(data.message || "Registration failed. Please try again.");
         }
-
     })
     .catch(err => {
-        console.error("Register Error:", err);
-        alert("Something went wrong. Please try again.");
+        // Never log secrets or passwords
+        console.error("Register Error:", err.message);
+        alert(err.message || "Something went wrong. Please try again.");
     });
 
     return false;
@@ -139,46 +208,44 @@ function registerUser() {
 // -------------------- LOGIN --------------------
 
 function login() {
+    let emailElem = document.getElementById("email");
+    let passElem = document.getElementById("password");
 
-    let email    = document.getElementById("email").value.trim();
-    let password = document.getElementById("password").value;
+    if (!emailElem || !passElem) return;
 
-    if (email == "" || password == "") {
-        alert("Please enter email and password");
+    let email    = emailElem.value.trim();
+    let password = passElem.value;
+
+    if (email === "" || password === "") {
+        alert("Please enter email and password.");
         return;
     }
 
-    // ✅ Backend API call
-    fetch("/auth/login", {
+    apiRequest("/auth/login", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ email, password })
     })
-    .then(res => res.json())
     .then(data => {
-
-        if (data.success) {
+        if (data.success && data.user) {
             localStorage.setItem("isLoggedIn", "true");
             localStorage.setItem("name", data.user.name);
             localStorage.setItem("email", data.user.email);
             alert("Login Successful! Welcome " + data.user.name);
             window.location.href = "/";
         } else {
-            alert(data.message);
+            alert(data.message || "Invalid credentials.");
         }
-
     })
     .catch(err => {
-        console.error("Login Error:", err);
-        alert("Something went wrong. Please try again.");
+        console.error("Login Error:", err.message);
+        alert(err.message || "Something went wrong. Please try again.");
     });
-
 }
 
 // -------------------- CALCULATE FARE --------------------
 
 function calculateFare() {
-
     let vehicle = document.getElementById("vehicle").value;
     let fare = 0;
 
@@ -195,35 +262,30 @@ function calculateFare() {
 
     document.getElementById("fare").innerHTML = "Estimated Fare : ₹ " + fare;
     localStorage.setItem("fare", fare);
-
 }
 
 // -------------------- BOOK RIDE --------------------
 
 function bookRide() {
-
     let pickup  = document.getElementById("pickup").value.trim();
     let drop    = document.getElementById("drop").value.trim();
     let vehicle = document.getElementById("vehicle").value;
     let userEmail = localStorage.getItem("email") || "guest@ridego.com";
 
-    if (pickup == "" || drop == "" || vehicle == "") {
+    if (pickup === "" || drop === "" || vehicle === "") {
         alert("Please Fill All Details");
         return;
     }
 
     let fare = localStorage.getItem("fare") || 0;
 
-    // ✅ Backend API call
-    fetch("/booking/book", {
+    apiRequest("/booking/book", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ userEmail, pickup, drop, vehicle, fare })
     })
-    .then(res => res.json())
     .then(data => {
-
-        if (data.success) {
+        if (data.success && data.booking) {
             localStorage.setItem("pickup", pickup);
             localStorage.setItem("drop", drop);
             localStorage.setItem("vehicle", vehicle);
@@ -231,15 +293,13 @@ function bookRide() {
             alert("Ride Booked Successfully! Driver Assigned.");
             window.location.href = "/ridestatus";
         } else {
-            alert(data.message);
+            alert(data.message || "Booking failed.");
         }
-
     })
     .catch(err => {
-        console.error("Booking Error:", err);
-        alert("Something went wrong. Please try again.");
+        console.error("Booking Error:", err.message);
+        alert(err.message || "Something went wrong. Please try again.");
     });
-
 }
 
 // -------------------- FETCH MY BOOKINGS --------------------
@@ -247,18 +307,18 @@ function bookRide() {
 function fetchMyBookings() {
     let userEmail = localStorage.getItem("email");
     let container = document.getElementById("bookingsList");
+    if (!container) return;
 
     if (!userEmail) {
         container.innerHTML = "<p style='text-align:center;'>Please login to view your ride history.</p>";
         return;
     }
 
-    fetch(`/booking/user/${userEmail}`)
-    .then(res => res.json())
+    apiRequest(`/booking/user/${encodeURIComponent(userEmail)}`)
     .then(data => {
-        if (data.success && data.bookings.length > 0) {
+        if (data.success && data.bookings && data.bookings.length > 0) {
             let html = "";
-            data.bookings.reverse().forEach(b => {
+            data.bookings.slice().reverse().forEach(b => {
                 let badgeClass = b.status === "Cancelled" ? "badge-cancelled" : "badge-assigned";
                 html += `
                     <div class="booking-card">
@@ -284,8 +344,8 @@ function fetchMyBookings() {
         }
     })
     .catch(err => {
-        console.error("Error fetching bookings:", err);
-        container.innerHTML = "<p style='text-align:center; color:red;'>Failed to load bookings.</p>";
+        console.error("Error fetching bookings:", err.message);
+        container.innerHTML = `<p style='text-align:center; color:red;'>${err.message || 'Failed to load bookings.'}</p>`;
     });
 }
 
@@ -299,19 +359,18 @@ function trackBooking(id) {
 function loadRideStatus() {
     let bookingId = localStorage.getItem("currentBookingId");
     let container = document.getElementById("statusContainer");
+    if (!container) return;
 
     if (!bookingId) {
         container.innerHTML = "<p>No active booking selected. <a href='/bookride'>Book a Ride</a></p>";
         return;
     }
 
-    fetch(`/booking/detail/${bookingId}`)
-    .then(res => res.json())
+    apiRequest(`/booking/detail/${encodeURIComponent(bookingId)}`)
     .then(data => {
-        if (data.success) {
+        if (data.success && data.booking) {
             let b = data.booking;
             let driver = b.driver || { name: "Assigned Driver", phone: "+91 9876543210", vehicleNo: "TN 07 AB 1234", rating: "4.8 ★" };
-
             let isCancelled = b.status === "Cancelled";
 
             container.innerHTML = `
@@ -361,8 +420,8 @@ function loadRideStatus() {
         }
     })
     .catch(err => {
-        console.error("Error loading ride status:", err);
-        container.innerHTML = "<p>Error loading status.</p>";
+        console.error("Error loading ride status:", err.message);
+        container.innerHTML = `<p style="color:red;">${err.message || 'Error loading status.'}</p>`;
     });
 }
 
@@ -371,12 +430,11 @@ function loadRideStatus() {
 function cancelRide(bookingId) {
     if (!confirm("Are you sure you want to cancel this ride?")) return;
 
-    fetch("/booking/cancel", {
+    apiRequest("/booking/cancel", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ bookingId })
     })
-    .then(res => res.json())
     .then(data => {
         if (data.success) {
             alert("Ride Cancelled Successfully");
@@ -388,136 +446,84 @@ function cancelRide(bookingId) {
                 window.location.href = "/mybookings";
             }
         } else {
-            alert(data.message);
+            alert(data.message || "Could not cancel ride.");
         }
     })
     .catch(err => {
-        console.error("Cancel error:", err);
-        alert("Could not cancel ride.");
+        console.error("Cancel error:", err.message);
+        alert(err.message || "Could not cancel ride.");
     });
 }
 
 // -------------------- PAYMENT --------------------
 
 function payNow() {
+    let methodElem = document.getElementById("paymentMethod");
+    if (!methodElem) return;
 
-    let method = document.getElementById("paymentMethod").value;
+    let method = methodElem.value;
     let fare   = localStorage.getItem("fare") || 0;
 
-    if (method == "") {
+    if (method === "") {
         alert("Please Select Payment Method");
         return;
     }
 
-    // ✅ Backend API call
-    fetch("/payment/pay", {
+    apiRequest("/payment/pay", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ paymentMethod: method, amount: fare, status: "Paid" })
     })
-    .then(res => res.json())
     .then(data => {
-
         if (data.success) {
             alert("Payment Successful!\n\nMethod : " + method);
             window.location.href = "/feedbackpage";
         } else {
-            alert(data.message);
+            alert(data.message || "Payment could not be processed.");
         }
-
     })
     .catch(err => {
-        console.error("Payment Error:", err);
-        alert("Something went wrong. Please try again.");
+        console.error("Payment Error:", err.message);
+        alert(err.message || "Something went wrong. Please try again.");
     });
-
 }
 
 // -------------------- FEEDBACK --------------------
 
 function submitFeedback() {
+    let nameElem = document.getElementById("name");
+    let ratingElem = document.getElementById("rating");
+    let commentElem = document.getElementById("comments");
 
-    let name     = document.getElementById("name").value.trim();
-    let rating   = document.getElementById("rating").value;
-    let comments = document.getElementById("comments").value.trim();
+    if (!nameElem || !ratingElem || !commentElem) return;
 
-    if (name == "" || rating == "" || comments == "") {
+    let name     = nameElem.value.trim();
+    let rating   = ratingElem.value;
+    let comments = commentElem.value.trim();
+
+    if (name === "" || rating === "" || comments === "") {
         alert("Please fill all fields.");
         return;
     }
 
-    // ✅ Backend API call
-    fetch("/feedback/submit", {
+    apiRequest("/feedback/submit", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ name, rating, comments })
     })
-    .then(res => res.json())
     .then(data => {
-
         if (data.success) {
             alert("Thank you for your feedback! 😊");
             window.location.href = "/";
         } else {
-            alert(data.message);
+            alert(data.message || "Feedback could not be submitted.");
         }
-
     })
     .catch(err => {
-        console.error("Feedback Error:", err);
-        alert("Something went wrong. Please try again.");
+        console.error("Feedback Error:", err.message);
+        alert(err.message || "Something went wrong. Please try again.");
     });
-
 }
-
-// -------------------- PAGE LOAD CHECKS --------------------
-
-window.addEventListener("load", function () {
-
-    renderNavbar();
-
-    // Payment page: show fare
-    if (document.getElementById("fareAmount")) {
-        let fare = localStorage.getItem("fare");
-        if (fare == null) fare = 0;
-        document.getElementById("fareAmount").innerHTML = "Total Fare : ₹ " + fare;
-    }
-
-    // Bookride page: login check + prefill vehicle
-    if (window.location.pathname.includes("bookride")) {
-
-        let isLoggedIn = localStorage.getItem("isLoggedIn");
-
-        if (isLoggedIn != "true") {
-            alert("Please Login First");
-            window.location.href = "/login";
-            return;
-        }
-
-        let vehicle = localStorage.getItem("selectedVehicle");
-
-        if (vehicle && document.getElementById("vehicle")) {
-            document.getElementById("vehicle").value = vehicle;
-        }
-
-    }
-
-    // My Bookings Page Load
-    if (window.location.pathname.includes("mybookings")) {
-        fetchMyBookings();
-    }
-
-    // Ride Status Page Load
-    if (window.location.pathname.includes("ridestatus")) {
-        loadRideStatus();
-    }
-
-    // Driver Portal Page Load
-    if (window.location.pathname.includes("driver")) {
-        switchDriver();
-    }
-
-});
 
 // -------------------- DRIVER PORTAL FUNCTIONS --------------------
 
@@ -539,13 +545,11 @@ function fetchDriverRides(driverName) {
     let container = document.getElementById("driverRidesList");
     if (!container) return;
 
-    fetch(`/booking/driver/${encodeURIComponent(driverName)}`)
-    .then(res => res.json())
+    apiRequest(`/booking/driver/${encodeURIComponent(driverName)}`)
     .then(data => {
-        if (data.success) {
+        if (data.success && data.bookings) {
             let bookings = data.bookings;
 
-            // Stats calculation
             let total = bookings.length;
             let completed = bookings.filter(b => b.status === "Completed").length;
             let totalEarnings = bookings.filter(b => b.status === "Completed").reduce((sum, b) => sum + (Number(b.fare) || 0), 0);
@@ -565,7 +569,7 @@ function fetchDriverRides(driverName) {
             }
 
             let html = "";
-            bookings.reverse().forEach(b => {
+            bookings.slice().reverse().forEach(b => {
                 let badgeClass = "badge-assigned";
                 if (b.status === "In Progress") badgeClass = "badge-inprogress";
                 if (b.status === "Completed") badgeClass = "badge-completed";
@@ -608,8 +612,8 @@ function fetchDriverRides(driverName) {
         }
     })
     .catch(err => {
-        console.error("Error fetching driver rides:", err);
-        container.innerHTML = "<p style='text-align:center; color:red;'>Failed to load driver rides.</p>";
+        console.error("Error fetching driver rides:", err.message);
+        container.innerHTML = `<p style='text-align:center; color:red;'>${err.message || 'Failed to load driver rides.'}</p>`;
     });
 }
 
@@ -622,45 +626,87 @@ function startRideWithOTP(bookingId) {
 
     let otp = input.value.trim();
 
-    fetch("/booking/start-ride", {
+    apiRequest("/booking/start-ride", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ bookingId, otp })
     })
-    .then(res => res.json())
     .then(data => {
         if (data.success) {
             alert(data.message);
             switchDriver();
         } else {
-            alert(data.message);
+            alert(data.message || "OTP verification failed.");
         }
     })
     .catch(err => {
-        console.error("OTP Verification Error:", err);
-        alert("Error verifying OTP.");
+        console.error("OTP Verification Error:", err.message);
+        alert(err.message || "Error verifying OTP.");
     });
 }
 
 function completeRide(bookingId) {
     if (!confirm("Are you sure you want to mark this ride as completed?")) return;
 
-    fetch("/booking/complete-ride", {
+    apiRequest("/booking/complete-ride", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ bookingId })
     })
-    .then(res => res.json())
     .then(data => {
         if (data.success) {
             alert(data.message);
             switchDriver();
         } else {
-            alert(data.message);
+            alert(data.message || "Could not complete ride.");
         }
     })
     .catch(err => {
-        console.error("Complete Ride Error:", err);
-        alert("Error completing ride.");
+        console.error("Complete Ride Error:", err.message);
+        alert(err.message || "Error completing ride.");
     });
 }
+
+// -------------------- PAGE LOAD CHECKS --------------------
+
+window.addEventListener("load", function () {
+    renderNavbar();
+
+    // Payment page: show fare
+    if (document.getElementById("fareAmount")) {
+        let fare = localStorage.getItem("fare");
+        if (fare == null) fare = 0;
+        document.getElementById("fareAmount").innerHTML = "Total Fare : ₹ " + fare;
+    }
+
+    // Bookride page: login check + prefill vehicle
+    if (window.location.pathname.includes("bookride")) {
+        let isLoggedIn = localStorage.getItem("isLoggedIn");
+
+        if (isLoggedIn != "true") {
+            alert("Please Login First");
+            window.location.href = "/login";
+            return;
+        }
+
+        let vehicle = localStorage.getItem("selectedVehicle");
+        if (vehicle && document.getElementById("vehicle")) {
+            document.getElementById("vehicle").value = vehicle;
+        }
+    }
+
+    // My Bookings Page Load
+    if (window.location.pathname.includes("mybookings")) {
+        fetchMyBookings();
+    }
+
+    // Ride Status Page Load
+    if (window.location.pathname.includes("ridestatus")) {
+        loadRideStatus();
+    }
+
+    // Driver Portal Page Load
+    if (window.location.pathname.includes("driver")) {
+        switchDriver();
+    }
+});
