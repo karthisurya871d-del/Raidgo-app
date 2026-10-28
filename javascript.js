@@ -87,6 +87,14 @@ function rideStatusPage() {
     window.location.href = "/ridestatus";
 }
 
+function driverPage() {
+    if (localStorage.getItem("isDriverLoggedIn") === "true") {
+        window.location.href = "/driver";
+    } else {
+        window.location.href = "/driver-login";
+    }
+}
+
 function logout() {
     localStorage.clear();
     alert("Logged out successfully");
@@ -101,13 +109,15 @@ function renderNavbar() {
 
     let isLoggedIn = localStorage.getItem("isLoggedIn");
     let userName = localStorage.getItem("name");
+    let isDriverLoggedIn = localStorage.getItem("isDriverLoggedIn");
+    let driverLink = isDriverLoggedIn === "true" ? "/driver" : "/driver-login";
 
     if (isLoggedIn === "true" && userName) {
         navUl.innerHTML = `
             <li><a href="/">Home</a></li>
             <li><a href="/bookride">Book Ride</a></li>
             <li><a href="/mybookings">My Bookings</a></li>
-            <li><a href="/driver" style="color:#FFD400; background:#111; padding:4px 10px; border-radius:6px;">Driver Portal</a></li>
+            <li><a href="${driverLink}" onclick="driverPage(); return false;" style="color:#FFD400; background:#111; padding:4px 10px; border-radius:6px;">Driver Portal</a></li>
             <li style="margin-left:25px; font-weight:bold; color:#111;">👋 Hi, ${userName}</li>
             <li style="margin-left:15px;"><a href="#" onclick="logout(); return false;" style="color:#c62828;">Logout</a></li>
         `;
@@ -117,7 +127,7 @@ function renderNavbar() {
             <li><a href="/login">Login</a></li>
             <li><a href="/bookride">Book Ride</a></li>
             <li><a href="/mybookings">My Bookings</a></li>
-            <li><a href="/driver" style="color:#FFD400; background:#111; padding:4px 10px; border-radius:6px;">Driver Portal</a></li>
+            <li><a href="${driverLink}" onclick="driverPage(); return false;" style="color:#FFD400; background:#111; padding:4px 10px; border-radius:6px;">Driver Portal</a></li>
         `;
     }
 }
@@ -859,11 +869,10 @@ window.addEventListener("load", function () {
                              !window.location.pathname.includes("driver-register");
 
     if (isDriverDashboard) {
-        let isDriverLoggedIn = localStorage.getItem("isDriverLoggedIn");
-        if (isDriverLoggedIn !== "true") {
-            window.location.href = "/driver-login";
-            return;
+        if (localStorage.getItem("isDriverLoggedIn") === "true") {
+            initDriverPortal();
+        } else {
+            window.location.replace("/driver-login");
         }
-        initDriverPortal();
     }
 });
