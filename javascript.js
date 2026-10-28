@@ -525,21 +525,174 @@ function submitFeedback() {
     });
 }
 
+// -------------------- DRIVER AUTHENTICATION --------------------
+
+function driverLogin(event) {
+    if (event) event.preventDefault();
+
+    let emailElem = document.getElementById("driverEmail");
+    let passElem = document.getElementById("driverPassword");
+
+    if (!emailElem || !passElem) return false;
+
+    let email = emailElem.value.trim();
+    let password = passElem.value;
+
+    if (!email || !password) {
+        alert("Please enter driver email and password.");
+        return false;
+    }
+
+    apiRequest("/driver-auth/login", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email, password })
+    })
+    .then(data => {
+        if (data.success && data.driver) {
+            localStorage.setItem("isDriverLoggedIn", "true");
+            localStorage.setItem("currentDriver", JSON.stringify(data.driver));
+            localStorage.setItem("selectedDriverName", data.driver.name);
+            alert(`Welcome, ${data.driver.name}! Driver login successful.`);
+            window.location.href = "/driver";
+        } else {
+            alert(data.message || "Invalid driver credentials.");
+        }
+    })
+    .catch(err => {
+        console.error("Driver Login Error:", err.message);
+        alert(err.message || "Could not log in. Please try again.");
+    });
+
+    return false;
+}
+
+function driverRegister(event) {
+    if (event) event.preventDefault();
+
+    let nameElem = document.getElementById("driverName");
+    let phoneElem = document.getElementById("driverPhone");
+    let emailElem = document.getElementById("driverEmail");
+    let vehicleElem = document.getElementById("driverVehicle");
+    let vehicleNoElem = document.getElementById("driverVehicleNo");
+    let passElem = document.getElementById("driverPassword");
+    let confirmElem = document.getElementById("driverConfirmPassword");
+
+    if (!nameElem || !phoneElem || !emailElem || !vehicleElem || !vehicleNoElem || !passElem || !confirmElem) {
+        return false;
+    }
+
+    let name = nameElem.value.trim();
+    let phone = phoneElem.value.trim();
+    let email = emailElem.value.trim();
+    let vehicle = vehicleElem.value;
+    let vehicleNo = vehicleNoElem.value.trim().toUpperCase();
+    let password = passElem.value;
+    let confirm = confirmElem.value;
+
+    if (!name || !phone || !email || !vehicle || !vehicleNo || !password || !confirm) {
+        alert("Please fill in all driver registration fields.");
+        return false;
+    }
+
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(email)) {
+        alert("Please enter a valid email address.");
+        return false;
+    }
+
+    if (!/^\d{10}$/.test(phone)) {
+        alert("Please enter a valid 10-digit mobile number.");
+        return false;
+    }
+
+    if (password.length < 6) {
+        alert("Password must be at least 6 characters long.");
+        return false;
+    }
+
+    if (password !== confirm) {
+        alert("Passwords do not match.");
+        return false;
+    }
+
+    apiRequest("/driver-auth/register", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ name, phone, email, vehicle, vehicleNo, password })
+    })
+    .then(data => {
+        if (data.success) {
+            alert(data.message || "Driver Registered Successfully! Please Login.");
+            window.location.href = "/driver-login";
+        } else {
+            alert(data.message || "Driver registration failed.");
+        }
+    })
+    .catch(err => {
+        console.error("Driver Registration Error:", err.message);
+        alert(err.message || "Something went wrong during registration.");
+    });
+
+    return false;
+}
+
+function driverLogout() {
+    localStorage.removeItem("isDriverLoggedIn");
+    localStorage.removeItem("currentDriver");
+    localStorage.removeItem("selectedDriverName");
+    alert("Driver logged out successfully.");
+    window.location.href = "/driver-login";
+}
+
 // -------------------- DRIVER PORTAL FUNCTIONS --------------------
 
-function switchDriver() {
-    let select = document.getElementById("driverSelect");
-    if (select) {
-        let driverName = select.value;
-        localStorage.setItem("selectedDriverName", driverName);
-        fetchDriverRides(driverName);
+function initDriverPortal() {
+    let driverData = localStorage.getItem("currentDriver");
+    let currentDriver = null;
+
+    if (driverData) {
+        try {
+            currentDriver = JSON.parse(driverData);
+        } catch (e) {
+            currentDriver = null;
+        }
     }
+
+    if (!currentDriver || !currentDriver.name) {
+        currentDriver = {
+            name: "Suresh Kumar",
+            vehicle: "Bike",
+            vehicleNo: "TN 07 AB 4589",
+            phone: "+91 98765 43210",
+            rating: "4.9 ★"
+        };
+    }
+
+    // Populate active driver profile header
+    if (document.getElementById("activeDriverName")) {
+        document.getElementById("activeDriverName").innerText = currentDriver.name;
+    }
+
+    if (document.getElementById("driverBadgeInfo")) {
+        document.getElementById("driverBadgeInfo").innerHTML = `
+            🚗 <strong>${currentDriver.vehicle || 'Vehicle'}:</strong> ${currentDriver.vehicleNo || 'N/A'} &nbsp;|&nbsp; 
+            📱 <strong>Phone:</strong> ${currentDriver.phone || 'N/A'} &nbsp;|&nbsp; 
+            ⭐ <strong>Rating:</strong> ${currentDriver.rating || '5.0 ★'}
+        `;
+    }
+
+    if (document.getElementById("driverNavProfile")) {
+        document.getElementById("driverNavProfile").innerText = `👨‍✈️ Driver: ${currentDriver.name}`;
+    }
+
+    fetchDriverRides(currentDriver.name);
 }
 
 function fetchDriverRides(driverName) {
     if (!driverName) {
-        let select = document.getElementById("driverSelect");
-        driverName = select ? select.value : "Suresh Kumar";
+        let saved = localStorage.getItem("selectedDriverName");
+        driverName = saved || "Suresh Kumar";
     }
 
     let container = document.getElementById("driverRidesList");
@@ -558,13 +711,8 @@ function fetchDriverRides(driverName) {
             if (document.getElementById("statCompletedRides")) document.getElementById("statCompletedRides").innerText = completed;
             if (document.getElementById("statEarnings")) document.getElementById("statEarnings").innerText = `₹ ${totalEarnings}`;
 
-            let driverObj = bookings.length > 0 && bookings[0].driver ? bookings[0].driver : null;
-            if (document.getElementById("driverBadgeInfo") && driverObj) {
-                document.getElementById("driverBadgeInfo").innerHTML = `📱 ${driverObj.phone} &nbsp;|&nbsp; 🚗 ${driverObj.vehicleNo} &nbsp;|&nbsp; ${driverObj.rating}`;
-            }
-
             if (bookings.length === 0) {
-                container.innerHTML = "<p style='text-align:center; color:gray; padding: 20px;'>No rides assigned to this driver yet.</p>";
+                container.innerHTML = "<p style='text-align:center; color:gray; padding: 30px; background:white; border-radius:10px;'>No rides assigned to your profile yet. New bookings will appear here!</p>";
                 return;
             }
 
@@ -633,8 +781,8 @@ function startRideWithOTP(bookingId) {
     })
     .then(data => {
         if (data.success) {
-            alert(data.message);
-            switchDriver();
+            alert(data.message || "OTP verified! Ride started.");
+            initDriverPortal();
         } else {
             alert(data.message || "OTP verification failed.");
         }
@@ -655,8 +803,8 @@ function completeRide(bookingId) {
     })
     .then(data => {
         if (data.success) {
-            alert(data.message);
-            switchDriver();
+            alert(data.message || "Ride completed!");
+            initDriverPortal();
         } else {
             alert(data.message || "Could not complete ride.");
         }
@@ -705,8 +853,17 @@ window.addEventListener("load", function () {
         loadRideStatus();
     }
 
-    // Driver Portal Page Load
-    if (window.location.pathname.includes("driver")) {
-        switchDriver();
+    // Driver Portal Page Load (Auth Guard)
+    const isDriverDashboard = (window.location.pathname.endsWith("/driver") || window.location.pathname.includes("driver.html")) &&
+                             !window.location.pathname.includes("driver-login") &&
+                             !window.location.pathname.includes("driver-register");
+
+    if (isDriverDashboard) {
+        let isDriverLoggedIn = localStorage.getItem("isDriverLoggedIn");
+        if (isDriverLoggedIn !== "true") {
+            window.location.href = "/driver-login";
+            return;
+        }
+        initDriverPortal();
     }
 });

@@ -35,11 +35,13 @@ const authRoutes = require("./routes/auth");
 const bookingRoutes = require("./routes/booking");
 const paymentRoutes = require("./routes/payment");
 const feedbackRoutes = require("./routes/feedback");
+const driverAuthRoutes = require("./routes/driverAuth");
 
 app.use("/auth", authRoutes);
 app.use("/booking", bookingRoutes);
 app.use("/payment", paymentRoutes);
 app.use("/feedback", feedbackRoutes);
+app.use("/driver-auth", driverAuthRoutes);
 
 // Home Page
 app.get("/", (req, res) => {
@@ -77,6 +79,14 @@ app.get("/ridestatus", (req, res) => {
 
 app.get("/driver", (req, res) => {
     res.sendFile(path.join(__dirname, "driver.html"));
+});
+
+app.get("/driver-login", (req, res) => {
+    res.sendFile(path.join(__dirname, "driver-login.html"));
+});
+
+app.get("/driver-register", (req, res) => {
+    res.sendFile(path.join(__dirname, "driver-register.html"));
 });
 
 // Server Listen

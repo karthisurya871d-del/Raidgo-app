@@ -77,28 +77,43 @@
   to = "/driver.html"
   status = 200
 
-# OPTIONAL BACKEND PROXY (Recommended once backend is deployed):
-# Uncomment and replace YOUR-BACKEND-URL with your live Render/Railway URL:
-# [[redirects]]
-#   from = "/auth/*"
-#   to = "https://YOUR-BACKEND-URL.onrender.com/auth/:splat"
-#   status = 200
-#   force = true
-#
-# [[redirects]]
-#   from = "/booking/*"
-#   to = "https://YOUR-BACKEND-URL.onrender.com/booking/:splat"
-#   status = 200
-#   force = true
-#
-# [[redirects]]
-#   from = "/payment/*"
-#   to = "https://YOUR-BACKEND-URL.onrender.com/payment/:splat"
-#   status = 200
-#   force = true
-#
-# [[redirects]]
-#   from = "/feedback/*"
-#   to = "https://YOUR-BACKEND-URL.onrender.com/feedback/:splat"
-#   status = 200
-#   force = true
+[[redirects]]
+  from = "/driver-login"
+  to = "/driver-login.html"
+  status = 200
+
+[[redirects]]
+  from = "/driver-register"
+  to = "/driver-register.html"
+  status = 200
+
+# BACKEND PROXY (Connected to Render Live Backend)
+[[redirects]]
+  from = "/auth/*"
+  to = "https://ridego-backend-c8fd.onrender.com/auth/:splat"
+  status = 200
+  force = true
+
+[[redirects]]
+  from = "/driver-auth/*"
+  to = "https://ridego-backend-c8fd.onrender.com/driver-auth/:splat"
+  status = 200
+  force = true
+
+[[redirects]]
+  from = "/booking/*"
+  to = "https://ridego-backend-c8fd.onrender.com/booking/:splat"
+  status = 200
+  force = true
+
+[[redirects]]
+  from = "/payment/*"
+  to = "https://ridego-backend-c8fd.onrender.com/payment/:splat"
+  status = 200
+  force = true
+
+[[redirects]]
+  from = "/feedback/*"
+  to = "https://ridego-backend-c8fd.onrender.com/feedback/:splat"
+  status = 200
+  force = true

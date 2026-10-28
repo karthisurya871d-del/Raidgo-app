@@ -1,0 +1,164 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>RideGo - Driver Partner Registration</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: Arial, sans-serif;
+        }
+        body {
+            background: linear-gradient(135deg, #FFD400, #FFC107);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            padding: 25px 15px;
+        }
+        .container {
+            width: 100%;
+            max-width: 440px;
+            background: white;
+            padding: 35px 30px;
+            border-radius: 15px;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.2);
+            text-align: center;
+        }
+        .driver-badge {
+            display: inline-block;
+            background: #111;
+            color: #FFD400;
+            padding: 6px 14px;
+            border-radius: 20px;
+            font-size: 13px;
+            font-weight: bold;
+            margin-bottom: 12px;
+            letter-spacing: 1px;
+        }
+        h2 {
+            margin-bottom: 8px;
+            color: #222;
+            font-size: 26px;
+        }
+        p.subtitle {
+            color: #666;
+            font-size: 14px;
+            margin-bottom: 20px;
+        }
+        input, select {
+            width: 100%;
+            padding: 12px;
+            margin: 8px 0;
+            border: 1px solid #ccc;
+            border-radius: 8px;
+            font-size: 15px;
+            outline: none;
+            transition: 0.3s;
+            background: white;
+        }
+        input:focus, select:focus {
+            border-color: #FFD400;
+            box-shadow: 0 0 8px rgba(255,212,0,0.5);
+        }
+        .form-row {
+            display: flex;
+            gap: 10px;
+        }
+        .form-row > * {
+            flex: 1;
+        }
+        button {
+            width: 100%;
+            padding: 13px;
+            background: #111;
+            color: #FFD400;
+            border: none;
+            border-radius: 8px;
+            font-size: 17px;
+            font-weight: bold;
+            cursor: pointer;
+            margin-top: 15px;
+            transition: 0.3s;
+        }
+        button:hover {
+            background: #FFD400;
+            color: #111;
+        }
+        .links-area {
+            margin-top: 20px;
+            font-size: 14px;
+            line-height: 1.8;
+        }
+        a {
+            color: #0066cc;
+            text-decoration: none;
+            font-weight: bold;
+        }
+        a:hover {
+            text-decoration: underline;
+        }
+        .footer-note {
+            font-size: 12px;
+            color: #888;
+            margin-top: 15px;
+            border-top: 1px solid #eee;
+            padding-top: 12px;
+        }
+    </style>
+</head>
+<body>
+
+<div class="container">
+
+    <div class="driver-badge">🚗 DRIVE WITH RIDEGO</div>
+    <h2>Driver Partner Sign Up</h2>
+    <p class="subtitle">Join as a verified driver & earn on every ride</p>
+
+    <form onsubmit="driverRegister(event)">
+        <input type="text" id="driverName" placeholder="Full Name (Driver)" required>
+        
+        <input type="tel" id="driverPhone" placeholder="Mobile Number (10 digits)" required>
+        
+        <input type="email" id="driverEmail" placeholder="Driver Email Address" required>
+
+        <div class="form-row">
+            <select id="driverVehicle" required>
+                <option value="">Vehicle Type</option>
+                <option value="Bike">Bike (2-Wheeler)</option>
+                <option value="Auto">Auto (3-Wheeler)</option>
+                <option value="Car">Car (4-Wheeler)</option>
+            </select>
+            <input type="text" id="driverVehicleNo" placeholder="Vehicle No (e.g. TN 07 AB 1234)" required>
+        </div>
+
+        <input type="password" id="driverPassword" placeholder="Create Password (min 6 characters)" required>
+        
+        <input type="password" id="driverConfirmPassword" placeholder="Confirm Password" required>
+
+        <button type="submit">Register as Driver Partner</button>
+    </form>
+
+    <div class="links-area">
+        <p>
+            Already a Driver Partner?
+            <a href="/driver-login">Login Here</a>
+        </p>
+        <p>
+            <a href="/" style="color:#555;">← Back to Home</a>
+        </p>
+    </div>
+
+    <div class="footer-note">
+        RideGo Driver Partner Platform &bull; Educational Project
+    </div>
+
+</div>
+
+<script src="javascript.js"></script>
+
+</body>
+</html>

@@ -14,3 +14,12 @@
 /mybookings     /mybookings.html 200
 /ridestatus     /ridestatus.html 200
 /driver         /driver.html    200
+/driver-login   /driver-login.html 200
+/driver-register /driver-register.html 200
+
+# API Proxy to Render Backend
+/auth/*         https://ridego-backend-c8fd.onrender.com/auth/:splat        200!
+/driver-auth/*  https://ridego-backend-c8fd.onrender.com/driver-auth/:splat 200!
+/booking/*      https://ridego-backend-c8fd.onrender.com/booking/:splat     200!
+/payment/*      https://ridego-backend-c8fd.onrender.com/payment/:splat     200!
+/feedback/*     https://ridego-backend-c8fd.onrender.com/feedback/:splat    200!
